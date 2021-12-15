@@ -6,12 +6,12 @@ function Searchbar({ onSubmit }) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleInputChange = (e) => {
-    this.setSearchQuery(e.target.value);
+    setSearchQuery(e.target.value);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(searchQuery.trim());
+    onSubmit(searchQuery);
     setSearchQuery("");
   };
 

@@ -1,156 +1,149 @@
-// import css from "../../App.module.css";
-// import PropTypes from "prop-types";
-// import React, { Component } from "react";
-// import ImageGalleryItem from "../ImageGalleryItem/ImageGalleryItem";
-// import Button from "../Button/Button";
-// import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
-// import Loader from "react-loader-spinner";
-// import Modal from "../Modal/Modal";
-
-// import { fetchImg } from "../../servise/apiImg";
-// class ImageGallery extends Component {
-//   state = {
-//     status: "idle",
-//   };
-
-//   componentDidUpdate(prevProps) {
-//     const prevSearch = prevProps.searchQuery;
-//     const nextSearch = this.props.searchQuery;
-//     const page = 1;
-//     if (prevSearch !== nextSearch) {
-//       this.setState({ status: "pending", page: 1 });
-
-//       fetchImg(nextSearch, page)
-//         .then((images) => {
-//           console.log(images);
-
-//           if (images.total === 0) {
-//             this.setState({ error: "No any picture", status: "rejected" });
-//           } else {
-//             console.log(images.hits);
-
-//             this.setState({
-//               images: images.hits,
-//               status: "resolved",
-//               page: 1,
-//               searchQuery: nextSearch,
-//             });
-//           }
-//         })
-//         .catch((error) => this.setState({ error, status: "rejected" }));
-//     }
-//   }
-//   loadMore = () => {
-//     const search = this.state.searchQuery;
-//     const page = this.state.page + 1;
-
-//     fetchImg(search, page)
-//       .then((images) =>
-//         this.setState((prevState) => ({
-//           images: [...prevState.images, ...images.hits],
-//           page: prevState.page + 1,
-//         }))
-//       )
-//       .then(() => {
-//         window.scrollTo({
-//           top: document.documentElement.scrollHeight,
-//           behavior: "smooth",
-//         });
-//       })
-//       .catch((error) => this.setState({ error }));
-//   };
-//   modalOpen = (moduleUrl, moduleAlt) => {
-//     this.setState({
-//       largeImageURL: moduleUrl,
-//       alt: moduleAlt,
-//     });
-//   };
-//   modalClose = () => {
-//     this.setState({ largeImageURL: "", alt: "" });
-//   };
-
-//   render() {
-//     const { images, status } = this.state;
-//     if (status === "idle") {
-//       return <p></p>;
-//     }
-//     if (status === "pending") {
-//       return (
-//         <Loader
-//           type="Oval"
-//           color="#DCB60E"
-//           height={60}
-//           width={60}
-//           style={{ textAlign: "center", paddingTop: "20px" }}
-//         />
-//       );
-//     }
-//     if (status === "resolved") {
-//       return (
-//         <ul className={css.ImageGallery}>
-//           {images.map((image) => {
-//             return (
-//               <ImageGalleryItem
-//                 key={image.id}
-//                 tags={image.tags}
-//                 webformatURL={image.webformatURL}
-//                 largeImageURL={image.largeImageURL}
-//                 modalOpen={this.modalOpen}
-//               />
-//             );
-//           })}
-//           <Button onClick={this.loadMore} />
-//           {this.state.largeImageURL && (
-//             <Modal
-//               largeImageURL={this.state.largeImageURL}
-//               alt={this.state.alt}
-//               onClick={this.modalClose}
-//             />
-//           )}
-//         </ul>
-//       );
-//     }
-//     if (status === "rejected") {
-//       return (
-//         <p className={css.p}>Sorry, "{this.props.searchQuery}" not found</p>
-//       );
-//     }
-//   }
-// }
-// export default ImageGallery;
-// ImageGallery.propTypes = {
-//   searchQuery: PropTypes.string.isRequired,
-// };
-import PropTypes from "prop-types";
-import ImageGalleryItem from "./ImageGalleryItem/ImageGalleryItem";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import ImageGalleryItem from "../ImageGalleryItem/ImageGalleryItem";
+import Modal from "../Modal/Modal";
+import Button from "../Button/Button";
+import Spinner from "../Loader/Loader";
+import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
 import css from "../../App.module.css";
+import fetchImg from "../../servise/apiImg";
 
-function ImageGallery({ images, onClick, onItemClick }) {
-  const handleOpenModal = (e) => {
-    if (e.target !== e.currentTarget) {
-      onClick();
+function ImageGallery({ query }) {
+  const [gallery, setGallery] = useState([]);
+  const [status, setStatus] = useState("idle");
+  const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(null);
+  const [modalImgSrc, setModalImgSrc] = useState("");
+  const [currentImgIdx, setCurrentImgIdx] = useState("");
+  const [largeImageURL, setLargeImageURL] = useState("");
+  const [alt, setAlt] = useState("");
+
+  useEffect(() => {
+    if (query !== "") {
+      setStatus("pending");
+      fetchImg(query)
+        .then((response) => {
+          if (response.ok) {
+            return response.json();
+          }
+          return Promise.reject(new Error(`no images on request`));
+        })
+        .then(({ hits }) => {
+          if (hits.length === 0) {
+            setStatus("rejected");
+          } else {
+            const newHits = match(hits);
+            setGallery(newHits);
+            setStatus("resolved");
+            setPage((prev) => prev + 1);
+            setSearchQuery(query);
+          }
+        })
+        .catch((error) => {
+          setStatus("rejected");
+          console.log(error);
+        });
+    }
+  }, [query]);
+
+  const loadmore = () => {
+    fetchImg(searchQuery, page)
+      .then((response) => {
+        return response.json();
+      })
+      .then(({ hits }) => {
+        const newHits = match(hits);
+        setGallery((prev) => [...prev, ...newHits]);
+        setPage((prev) => prev + 1);
+      })
+      .then(() => {
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+          behavior: "smooth",
+        });
+      })
+      .catch((error) => {
+        setStatus("rejected");
+        console.log(error);
+      });
+  };
+
+  const match = (arr) => {
+    const newArr = [];
+    arr.forEach(({ id, largeImageURL, tags }) => {
+      newArr.push({ id, largeImageURL, tags });
+    });
+    return newArr;
+  };
+
+  const toggleModal = () => {
+    setShowModal((prev) => !prev);
+    setModalImgSrc("");
+  };
+
+  const decrementModal = () => {
+    if (currentImgIdx > 0) {
+      setModalImgSrc(gallery[currentImgIdx - 1].largeImageURL);
+      setCurrentImgIdx((prev) => prev - 1);
     }
   };
-  return (
-    <ul className={css.ImageGallery} onClick={handleOpenModal}>
-      {images.map((image) => (
-        <li key={image.id} className={css.ImageGalleryItemImage}>
-          <ImageGalleryItem {...image} onItemClick={onItemClick} />
-        </li>
-      ))}
-    </ul>
-  );
+
+  const incrementModal = () => {
+    if (currentImgIdx < gallery.length - 1) {
+      setModalImgSrc(gallery[currentImgIdx + 1].largeImageURL);
+      setCurrentImgIdx((prev) => prev + 1);
+    }
+  };
+
+  const modalOpen = (src, alt, id) => {
+    setLargeImageURL(src);
+    setAlt(alt);
+    toggleModal();
+    gallery.map((item, idx) => {
+      if (item.id === id) {
+        setCurrentImgIdx(idx);
+      }
+      return "";
+    });
+  };
+
+  if (status === "idle") {
+    return "";
+  }
+  if (status === "pending") {
+    return <Spinner />;
+  }
+  if (status === "rejected") {
+    return <p className={css.p}>Sorry, "{query}" not found</p>;
+  }
+  if (status === "resolved") {
+    return (
+      <div className={css.wrapper}>
+        {showModal && (
+          <Modal
+            onClose={toggleModal}
+            onLeft={decrementModal}
+            onRight={incrementModal}
+            src={modalImgSrc || largeImageURL}
+            tags={alt}
+          />
+        )}
+        <ul className={css.ImageGallery}>
+          {gallery.map(({ largeImageURL, tags, id }) => {
+            return (
+              <ImageGalleryItem
+                src={largeImageURL}
+                alt={tags}
+                onClick={modalOpen}
+                key={id}
+                id={id}
+              />
+            );
+          })}
+        </ul>
+        <Button onClick={loadmore} />
+      </div>
+    );
+  }
 }
-
 export default ImageGallery;
-
-ImageGallery.propTypes = {
-  onClick: PropTypes.func.isRequired,
-  onItemClick: PropTypes.func.isRequired,
-  images: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-    })
-  ).isRequired,
-};
