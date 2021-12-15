@@ -226,4 +226,6 @@ img {
 }
 .Spinner {
   margin: 0 auto;
+  padding-top: 25px;
+  text-align: center;
 }
