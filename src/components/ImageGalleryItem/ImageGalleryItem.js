@@ -1,27 +1,26 @@
+import React from "react";
 import PropTypes from "prop-types";
 import css from "../../App.module.css";
 
-const ImageGalleryItem = ({ webformatURL, largeImageURL, tags, modalOpen }) => {
+const ImageGalleryItem = ({ id, webformatURL, onItemClick }) => {
+  const modalContent = (id) => {
+    onItemClick(id);
+  };
   return (
-    <li
-      className={css.ImageGalleryItem}
+    <img
+      src={webformatURL}
+      alt={""}
+      className={css.ImageGalleryItemImage}
       onClick={() => {
-        modalOpen(largeImageURL, tags);
+        modalContent(id);
       }}
-    >
-      <img
-        src={webformatURL}
-        alt={tags}
-        className={css.ImageGalleryItemImage}
-      />
-    </li>
+    />
   );
 };
 export default ImageGalleryItem;
 
 ImageGalleryItem.propTypes = {
-  webformatURL: PropTypes.string,
-  largeImageURL: PropTypes.string,
-  modalOpen: PropTypes.func,
-  tags: PropTypes.string,
+  id: PropTypes.number.isRequired,
+  webformatURL: PropTypes.string.isRequired,
+  onItemClick: PropTypes.func.isRequired,
 };
